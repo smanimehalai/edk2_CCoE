@@ -7,7 +7,6 @@
 **/
 
 #include "StatusCodeHandlerRuntimeDxe.h"
-#include <Library/PostCodeLib.h>
 
 /**
   Convert status code value and extended data to readable ASCII string, send string to serial I/O device.
@@ -46,7 +45,6 @@ SerialStatusCodeReportWorker (
   UINT32     LineNumber;
   UINTN      CharCount;
   BASE_LIST  Marker;
-  UINT8      postcode;
 
   Buffer[0] = '\0';
 
@@ -155,9 +153,6 @@ SerialStatusCodeReportWorker (
   // Call SerialPort Lib function to do print.
   //
   SerialPortWrite ((UINT8 *)Buffer, CharCount);
-
-  CodeTypeToPostCode (CodeType, Value, &postcode);
-  PostCode(postcode);
 
   //
   // If register an unregister function of gEfiEventExitBootServicesGuid,
