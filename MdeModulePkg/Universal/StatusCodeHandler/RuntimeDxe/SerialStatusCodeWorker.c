@@ -8,7 +8,6 @@
 
 #include "StatusCodeHandlerRuntimeDxe.h"
 #include <Library/PostCodeLib.h>
-#include <Library/PostCodeMapLib.h>
 
 /**
   Convert status code value and extended data to readable ASCII string, send string to serial I/O device.
@@ -157,7 +156,7 @@ SerialStatusCodeReportWorker (
   //
   SerialPortWrite ((UINT8 *)Buffer, CharCount);
 
-  postcode=GetPostCodeFromStatusCode(CodeType, Value);
+  CodeTypeToPostCode (CodeType, Value, &postcode);
   PostCode(postcode);
 
   //
