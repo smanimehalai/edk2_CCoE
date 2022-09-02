@@ -17,3 +17,9 @@
 	path = BaseTools/Source/C/BrotliCompress/brotli
 	url = https://github.com/google/brotli
 	ignore = untracked
+[submodule "edk2-libc"]
+	path = edk2-libc
+	url = https://github.com/ADLINK/edk2-libc.git
+[submodule "ShellPkg/Application/sbsa-acs"]
+	path = ShellPkg/Application/sbsa-acs
+	url = https://github.com/ADLINK/sbsa-acs.git

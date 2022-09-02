@@ -59,7 +59,8 @@
   DxeServicesTableLib|MdePkg/Library/DxeServicesTableLib/DxeServicesTableLib.inf
   DxeServicesLib|MdePkg/Library/DxeServicesLib/DxeServicesLib.inf
   ReportStatusCodeLib|MdePkg/Library/BaseReportStatusCodeLibNull/BaseReportStatusCodeLibNull.inf
-
+  SbsaValLib|ShellPkg/Application/sbsa-acs/val/SbsaValLib.inf
+  SbsaPalLib|ShellPkg/Application/sbsa-acs/platform/pal_uefi/SbsaPalLib.inf
 [LibraryClasses.ARM,LibraryClasses.AARCH64]
   #
   # It is not possible to prevent the ARM compiler for generic intrinsic functions.
@@ -145,6 +146,7 @@
   }
   ShellPkg/DynamicCommand/DpDynamicCommand/DpApp.inf
   ShellPkg/Application/AcpiViewApp/AcpiViewApp.inf
-
+  ShellPkg/Application/sbsa-acs/uefi_app/SbsaAvs.inf
+  
 [BuildOptions]
   *_*_*_CC_FLAGS = -D DISABLE_NEW_DEPRECATED_INTERFACES
