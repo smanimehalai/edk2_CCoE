@@ -16,6 +16,7 @@
 #include <Library/DebugLib.h>
 #include <Library/HiiLib.h>
 #include <Library/OemMiscLib.h>
+#include <Library/PcdLib.h>
 
 /** Gets the CPU frequency of the specified processor.
 
@@ -266,7 +267,7 @@ OemGetBiosRelease (
   )
 {
   ASSERT (FALSE);
-  return 0xFFFF;
+  return PcdGet16 (PcdSystemBiosRelease);
 }
 
 /** Fetches the embedded controller firmware release.
@@ -280,5 +281,5 @@ OemGetEmbeddedControllerFirmwareRelease (
   )
 {
   ASSERT (FALSE);
-  return 0xFFFF;
+  return PcdGet16 (PcdEmbeddedControllerFirmwareRelease);
 }

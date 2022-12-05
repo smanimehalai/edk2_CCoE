@@ -21,7 +21,7 @@ extern   ASM_PFX(PcdGet32 (PcdFspReservedBufferSize))
 ; Following functions will be provided in PlatformSecLib
 ;
 extern ASM_PFX(AsmGetFspBaseAddress)
-extern ASM_PFX(AsmGetFspInfoHeader)
+extern ASM_PFX(AsmGetFspInfoHeaderNoStack)
 ;extern ASM_PFX(LoadMicrocode)    ; @todo: needs a weak implementation
 extern ASM_PFX(SecPlatformInit)   ; @todo: needs a weak implementation
 extern ASM_PFX(SecCarInit)
@@ -87,6 +87,14 @@ struc LoadMicrocodeParamsFsp24
     .size:
 endstruc
 
+%macro CALL_RDI  1
+
+  mov     rdi,  %%ReturnAddress
+  jmp     %1
+%%ReturnAddress:
+
+%endmacro
+
 ;
 ; @todo: The strong/weak implementation does not work.
 ;        This needs to be reviewed later.
@@ -114,10 +122,9 @@ endstruc
 global ASM_PFX(LoadMicrocodeDefault)
 ASM_PFX(LoadMicrocodeDefault):
    ; Inputs:
-   ;   rsp -> LoadMicrocodeParams pointer
+   ;   rcx -> LoadMicrocodeParams pointer
    ; Register Usage:
-   ;   rsp  Preserved
-   ;   All others destroyed
+   ;   All are destroyed
    ; Assumptions:
    ;   No memory available, stack is hard-coded and used for return address
    ;   Executed by SBSP and NBSP
@@ -130,10 +137,9 @@ ASM_PFX(LoadMicrocodeDefault):
 
    cmp    rsp, 0
    jz     ParamError
-   mov    eax, dword [rsp + 8]    ; Parameter pointer
-   cmp    eax, 0
+   cmp    rcx, 0
    jz     ParamError
-   mov    esp, eax
+   mov    rsp, rcx
 
    ; skip loading Microcode if the MicrocodeCodeSize is zero
    ; and report error if size is less than 2k
@@ -144,14 +150,14 @@ ASM_PFX(LoadMicrocodeDefault):
    jne    ParamError
 
    ; UPD structure is compliant with FSP spec 2.4
-   mov    eax, dword [rsp + LoadMicrocodeParamsFsp24.MicrocodeCodeSize]
-   cmp    eax, 0
+   mov    rax, qword [rsp + LoadMicrocodeParamsFsp24.MicrocodeCodeSize]
+   cmp    rax, 0
    jz     Exit2
-   cmp    eax, 0800h
+   cmp    rax, 0800h
    jl     ParamError
 
-   mov    esi, dword [rsp + LoadMicrocodeParamsFsp24.MicrocodeCodeAddr]
-   cmp    esi, 0
+   mov    rsi, qword [rsp + LoadMicrocodeParamsFsp24.MicrocodeCodeAddr]
+   cmp    rsi, 0
    jnz    CheckMainHeader
 
 ParamError:
@@ -256,7 +262,8 @@ CheckAddress:
    ; UPD structure is compliant with FSP spec 2.4
    ; Is automatic size detection ?
    mov   rax, qword [rsp + LoadMicrocodeParamsFsp24.MicrocodeCodeSize]
-   cmp   rax, 0ffffffffffffffffh
+   mov   rcx, 0ffffffffffffffffh
+   cmp   rax, rcx
    jz    LoadMicrocodeDefault4
 
    ; Address >= microcode region address + microcode region size?
@@ -321,8 +328,7 @@ ASM_PFX(EstablishStackFsp):
   ;
   ; Save parameter pointer in rdx
   ;
-  mov       rdx, qword [rsp + 8]
-
+  mov       rdx, rcx
   ;
   ; Enable FSP STACK
   ;
@@ -420,7 +426,6 @@ ASM_PFX(TempRamInitApi):
   ;
   ENABLE_SSE
   ENABLE_AVX
-
   ;
   ; Save RBP, RBX, RSI, RDI and RSP in YMM7, YMM8 and YMM6
   ;
@@ -432,20 +437,28 @@ ASM_PFX(TempRamInitApi):
   SAVE_BFV  rbp
 
   ;
+  ; Save Input Parameter in YMM10
+  ;
+  cmp       rcx, 0
+  jnz       ParamValid
+
+  ;
+  ; Fall back to default UPD
+  ;
+  CALL_RDI  ASM_PFX(AsmGetFspInfoHeaderNoStack)
+  xor       rcx, rcx
+  mov       ecx,  DWORD [rax + 01Ch]      ; Read FsptImageBaseAddress
+  add       ecx,  DWORD [rax + 024h]      ; Get Cfg Region base address = FsptImageBaseAddress + CfgRegionOffset
+ParamValid:
+  SAVE_RCX
+
+  ;
   ; Save timestamp into YMM6
   ;
   rdtsc
   shl       rdx, 32
   or        rax, rdx
   SAVE_TS   rax
-
-  ;
-  ; Check Parameter
-  ;
-  mov       rax, qword [rsp + 8]
-  cmp       rax, 0
-  mov       rax, 08000000000000002h
-  jz        TempRamInitExit
 
   ;
   ; Sec Platform Init
@@ -455,18 +468,18 @@ ASM_PFX(TempRamInitApi):
   jnz       TempRamInitExit
 
   ; Load microcode
-  LOAD_RSP
+  LOAD_RCX
   CALL_YMM  ASM_PFX(LoadMicrocodeDefault)
   SAVE_UCODE_STATUS rax             ; Save microcode return status in SLOT 0 in YMM9 (upper 128bits).
   ; @note If return value rax is not 0, microcode did not load, but continue and attempt to boot.
 
   ; Call Sec CAR Init
-  LOAD_RSP
+  LOAD_RCX
   CALL_YMM  ASM_PFX(SecCarInit)
   cmp       rax, 0
   jnz       TempRamInitExit
 
-  LOAD_RSP
+  LOAD_RCX
   CALL_YMM  ASM_PFX(EstablishStackFsp)
   cmp       rax, 0
   jnz       TempRamInitExit

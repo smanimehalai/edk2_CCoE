@@ -30,7 +30,7 @@
   @return                     FSP specific IDT gate descriptor.
 
 **/
-UINT64
+IA32_IDT_GATE_DESCRIPTOR
 FspGetExceptionHandler (
   IN  UINT64  IdtEntryTemplate
   );
@@ -70,7 +70,7 @@ FspDataPointerFixUp (
   @return   FSP binary base address.
 
 **/
-UINT32
+UINTN
 EFIAPI
 AsmGetFspBaseAddress (
   VOID
@@ -79,10 +79,10 @@ AsmGetFspBaseAddress (
 /**
   This interface gets FspInfoHeader pointer
 
-  @return   FSP binary base address.
+  @return   FSP info header.
 
 **/
-UINT32
+UINTN
 EFIAPI
 AsmGetFspInfoHeader (
   VOID

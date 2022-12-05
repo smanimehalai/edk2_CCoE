@@ -2,6 +2,7 @@
   Module for clarifying the content of the smbios structure element information.
 
   Copyright (c) 2005 - 2018, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 1985 - 2022, American Megatrends International LLC.<BR>
   (C) Copyright 2014 Hewlett-Packard Development Company, L.P.<BR>
   (C) Copyright 2015-2019 Hewlett Packard Enterprise Development LP<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -597,8 +598,9 @@ SmbiosPrintStructure (
     //
     case 9:
     {
-      MISC_SLOT_PEER_GROUP  *PeerGroupPtr;
-      UINT8                 PeerGroupCount;
+      MISC_SLOT_PEER_GROUP         *PeerGroupPtr;
+      SMBIOS_TABLE_TYPE9_EXTENDED  *Type9ExtendedStruct;
+      UINT8                        PeerGroupCount;
 
       PRINT_PENDING_STRING (Struct, Type9, SlotDesignation);
       DisplaySystemSlotType (Struct->Type9->SlotType, Option);
@@ -636,9 +638,17 @@ SmbiosPrintStructure (
             ShellPrintHiiEx (-1, -1, NULL, STRING_TOKEN (STR_SMBIOSVIEW_PRINTINFO_DATA_BUS_WIDTH), gShellDebug1HiiHandle, PeerGroupPtr[Index].DataBusWidth);
           }
 
-          DisplaySystemSlotHeight (Struct->Type9->SlotHeight, Option);
-          DisplaySystemSlotPhysicalWidth (Struct->Type9->SlotPhysicalWidth, Option);
-          DisplaySystemSlotInformation (Struct->Type9->SlotInformation, Option);
+          if (AE_SMBIOS_VERSION (0x3, 0x4)) {
+            // Since PeerGroups has a variable number of entries, new fields added after PeerGroups are defined in
+            // a extended structure. Those fields can be referenced using SMBIOS_TABLE_TYPE9_EXTENDED structure.
+            Type9ExtendedStruct = (SMBIOS_TABLE_TYPE9_EXTENDED *)((UINT8 *)PeerGroupPtr + (PeerGroupCount * sizeof (MISC_SLOT_PEER_GROUP)));
+            DisplaySystemSlotInformation (Type9ExtendedStruct->SlotInformation, Option);
+            DisplaySystemSlotPhysicalWidth (Type9ExtendedStruct->SlotPhysicalWidth, Option);
+            ShellPrintHiiEx (-1, -1, NULL, STRING_TOKEN (STR_SMBIOSVIEW_QUERYTABLE_SYSTEM_SLOT_PITCH), gShellDebug1HiiHandle, Type9ExtendedStruct->SlotPitch);
+            if (AE_SMBIOS_VERSION (0x3, 0x5)) {
+              DisplaySystemSlotHeight (Type9ExtendedStruct->SlotHeight, Option);
+            }
+          }
         }
       }
 
@@ -876,6 +886,11 @@ SmbiosPrintStructure (
         if (Struct->Hdr->Length > 0x4C) {
           PRINT_STRUCT_VALUE_LH (Struct, Type17, LogicalSize);
         }
+      }
+
+      if (AE_SMBIOS_VERSION (0x3, 0x3) && (Struct->Hdr->Length > 0x54)) {
+        PRINT_STRUCT_VALUE_H (Struct, Type17, ExtendedSpeed);
+        PRINT_STRUCT_VALUE_H (Struct, Type17, ExtendedConfiguredMemorySpeed);
       }
 
       break;

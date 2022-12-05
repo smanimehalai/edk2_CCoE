@@ -1,6 +1,7 @@
 /** @file
   ProcessorSubClass.c
 
+  Copyright (c) 2022, Ampere Computing LLC. All rights reserved.
   Copyright (c) 2021, NUVIA Inc. All rights reserved.<BR>
   Copyright (c) 2015, Hisilicon Limited. All rights reserved.
   Copyright (c) 2015, Linaro Limited. All rights reserved.

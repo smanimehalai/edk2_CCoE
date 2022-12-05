@@ -193,11 +193,11 @@ SMBIOS_MISC_TABLE_FUNCTION (MiscBiosVendor) {
     TokenToUpdate = STRING_TOKEN (STR_MISC_BIOS_VERSION);
     HiiSetString (mSmbiosMiscHiiHandle, TokenToUpdate, Version, NULL);
   } else {
-      OemUpdateSmbiosInfo (
-        mSmbiosMiscHiiHandle,
-        STRING_TOKEN (STR_MISC_BIOS_VERSION),
-        BiosVersionType00
-        );
+    OemUpdateSmbiosInfo (
+      mSmbiosMiscHiiHandle,
+      STRING_TOKEN (STR_MISC_BIOS_VERSION),
+      BiosVersionType00
+      );
   }
 
   Char16String = GetBiosReleaseDate ();

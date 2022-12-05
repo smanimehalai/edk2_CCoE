@@ -2,7 +2,7 @@
   Functions for processor information common to ARM and AARCH64.
 
   Copyright (c) 2021, NUVIA Inc. All rights reserved.<BR>
-  Copyright (c) 2021, Ampere Computing LLC. All rights reserved.<BR>
+  Copyright (c) 2021 - 2022, Ampere Computing LLC. All rights reserved.<BR>
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
