@@ -170,6 +170,7 @@ SMBIOS_MISC_TABLE_FUNCTION (MiscBiosVendor) {
   EFI_STRING_ID       TokenToGet;
   SMBIOS_TABLE_TYPE0  *SmbiosRecord;
   SMBIOS_TABLE_TYPE0  *InputData;
+  CHAR16              *DefaultVersionString;
 
   //
   // First check for invalid parameters.
@@ -187,17 +188,30 @@ SMBIOS_MISC_TABLE_FUNCTION (MiscBiosVendor) {
     HiiSetString (mSmbiosMiscHiiHandle, TokenToUpdate, Vendor, NULL);
   }
 
-  Version = GetBiosVersion ();
+  DefaultVersionString = HiiGetString (
+                           mSmbiosMiscHiiHandle,
+                           STRING_TOKEN (STR_MISC_BIOS_VERSION),
+                           NULL
+                           );
 
-  if (StrLen (Version) > 0) {
-    TokenToUpdate = STRING_TOKEN (STR_MISC_BIOS_VERSION);
-    HiiSetString (mSmbiosMiscHiiHandle, TokenToUpdate, Version, NULL);
-  } else {
-    OemUpdateSmbiosInfo (
-      mSmbiosMiscHiiHandle,
-      STRING_TOKEN (STR_MISC_BIOS_VERSION),
-      BiosVersionType00
-      );
+  OemUpdateSmbiosInfo (
+    mSmbiosMiscHiiHandle,
+    STRING_TOKEN (STR_MISC_BIOS_VERSION),
+    BiosVersionType00
+    );
+
+  Version = HiiGetString (
+              mSmbiosMiscHiiHandle,
+              STRING_TOKEN (STR_MISC_BIOS_VERSION),
+              NULL
+              );
+
+  if (((StrCmp (Version, DefaultVersionString) == 0) || (StrLen (Version) == 0))) {
+    Version = GetBiosVersion ();
+    if (StrLen (Version) > 0) {
+      TokenToUpdate = STRING_TOKEN (STR_MISC_BIOS_VERSION);
+      HiiSetString (mSmbiosMiscHiiHandle, TokenToUpdate, Version, NULL);
+    }
   }
 
   Char16String = GetBiosReleaseDate ();
