@@ -506,7 +506,7 @@ XhcInitSched (
   // Software shall set Device Context Base Address Array entries for unallocated Device Slots to '0'.
   //
   Entries = (Xhc->MaxSlotsEn + 1) * sizeof (UINT64);
-  Dcbaa   = UsbHcAllocateMem (Xhc->MemPool, Entries);
+  Dcbaa   = UsbHcAllocateMem (Xhc->MemPool, Entries, FALSE);
   ASSERT (Dcbaa != NULL);
   ZeroMem (Dcbaa, Entries);
 
@@ -795,7 +795,7 @@ CreateEventRing (
   ASSERT (EventRing != NULL);
 
   Size = sizeof (TRB_TEMPLATE) * EVENT_RING_TRB_NUMBER;
-  Buf  = UsbHcAllocateMem (Xhc->MemPool, Size);
+  Buf  = UsbHcAllocateMem (Xhc->MemPool, Size, TRUE);
   ASSERT (Buf != NULL);
   ASSERT (((UINTN)Buf & 0x3F) == 0);
   ZeroMem (Buf, Size);
@@ -814,7 +814,7 @@ CreateEventRing (
   EventRing->EventRingCCS = 1;
 
   Size = sizeof (EVENT_RING_SEG_TABLE_ENTRY) * ERST_NUMBER;
-  Buf  = UsbHcAllocateMem (Xhc->MemPool, Size);
+  Buf  = UsbHcAllocateMem (Xhc->MemPool, Size, FALSE);
   ASSERT (Buf != NULL);
   ASSERT (((UINTN)Buf & 0x3F) == 0);
   ZeroMem (Buf, Size);
@@ -892,7 +892,7 @@ CreateTransferRing (
   LINK_TRB              *EndTrb;
   EFI_PHYSICAL_ADDRESS  PhyAddr;
 
-  Buf = UsbHcAllocateMem (Xhc->MemPool, sizeof (TRB_TEMPLATE) * TrbNum);
+  Buf = UsbHcAllocateMem (Xhc->MemPool, sizeof (TRB_TEMPLATE) * TrbNum, TRUE);
   ASSERT (Buf != NULL);
   ASSERT (((UINTN)Buf & 0x3F) == 0);
   ZeroMem (Buf, sizeof (TRB_TEMPLATE) * TrbNum);
@@ -1343,21 +1343,6 @@ XhcExecTransfer (
     goto DONE;
   }
 
-  //
-  // WORKAROUND - USB Net driver
-  // Typically, there are two cases that the BMC device returns NAK
-  // when receiving a BULK IN request
-  //   - Case 1: BMC has no data for the Bulk In request
-  //   - Case 2: BMC is preparing the data for returning to the Host
-  // So, I'm adding a workaround for reducing the number of retries for
-  // checking Bulk In response from BMC device in the case 1 so that
-  // the Host will return Timeout right after receiving a series of 50
-  // sequential NAK responses.
-  //
-#define MAX_NUMBER_OF_NAK_FOR_A_BULK_IN_REQUEST  50
-  UINTN Count;
-  Count = 0;
-
 RINGDOORBELL:
   XhcRingDoorBell (Xhc, SlotId, Dci);
 
@@ -1368,12 +1353,6 @@ RINGDOORBELL:
     }
 
     gBS->Stall (XHC_1_MICROSECOND);
-    if (++Count > MAX_NUMBER_OF_NAK_FOR_A_BULK_IN_REQUEST
-        && Urb->Ep.EpAddr == 1
-        && Urb->Ep.Direction == EfiUsbDataIn
-        && Urb->Ep.Type == XHC_BULK_TRANSFER) {
-      break;
-    }
   } while (IndefiniteTimeout || EFI_ERROR(gBS->CheckEvent (TimeoutEvent)));
 
 DONE:
@@ -2203,7 +2182,7 @@ XhcInitializeDeviceSlot (
   // 4.3.3 Device Slot Initialization
   // 1) Allocate an Input Context data structure (6.2.5) and initialize all fields to '0'.
   //
-  InputContext = UsbHcAllocateMem (Xhc->MemPool, sizeof (INPUT_CONTEXT));
+  InputContext = UsbHcAllocateMem (Xhc->MemPool, sizeof (INPUT_CONTEXT), FALSE);
   ASSERT (InputContext != NULL);
   ASSERT (((UINTN)InputContext & 0x3F) == 0);
   ZeroMem (InputContext, sizeof (INPUT_CONTEXT));
@@ -2305,7 +2284,7 @@ XhcInitializeDeviceSlot (
   //
   // 6) Allocate the Output Device Context data structure (6.2.1) and initialize it to '0'.
   //
-  OutputContext = UsbHcAllocateMem (Xhc->MemPool, sizeof (DEVICE_CONTEXT));
+  OutputContext = UsbHcAllocateMem (Xhc->MemPool, sizeof (DEVICE_CONTEXT), FALSE);
   ASSERT (OutputContext != NULL);
   ASSERT (((UINTN)OutputContext & 0x3F) == 0);
   ZeroMem (OutputContext, sizeof (DEVICE_CONTEXT));
@@ -2419,7 +2398,7 @@ XhcInitializeDeviceSlot64 (
   // 4.3.3 Device Slot Initialization
   // 1) Allocate an Input Context data structure (6.2.5) and initialize all fields to '0'.
   //
-  InputContext = UsbHcAllocateMem (Xhc->MemPool, sizeof (INPUT_CONTEXT_64));
+  InputContext = UsbHcAllocateMem (Xhc->MemPool, sizeof (INPUT_CONTEXT_64), FALSE);
   ASSERT (InputContext != NULL);
   ASSERT (((UINTN)InputContext & 0x3F) == 0);
   ZeroMem (InputContext, sizeof (INPUT_CONTEXT_64));
@@ -2521,7 +2500,7 @@ XhcInitializeDeviceSlot64 (
   //
   // 6) Allocate the Output Device Context data structure (6.2.1) and initialize it to '0'.
   //
-  OutputContext = UsbHcAllocateMem (Xhc->MemPool, sizeof (DEVICE_CONTEXT_64));
+  OutputContext = UsbHcAllocateMem (Xhc->MemPool, sizeof (DEVICE_CONTEXT_64), FALSE);
   ASSERT (OutputContext != NULL);
   ASSERT (((UINTN)OutputContext & 0x3F) == 0);
   ZeroMem (OutputContext, sizeof (DEVICE_CONTEXT_64));
@@ -3978,6 +3957,7 @@ XhcEvaluateContext (
   CMD_TRB_EVALUATE_CONTEXT    CmdTrbEvalu;
   EVT_TRB_COMMAND_COMPLETION  *EvtTrb;
   INPUT_CONTEXT               *InputContext;
+  DEVICE_CONTEXT              *OutputContext;
   EFI_PHYSICAL_ADDRESS        PhyAddr;
 
   ASSERT (Xhc->UsbDevContext[SlotId].SlotId != 0);
@@ -3985,11 +3965,15 @@ XhcEvaluateContext (
   //
   // 4.6.7 Evaluate Context
   //
-  InputContext = Xhc->UsbDevContext[SlotId].InputContext;
+  InputContext  = Xhc->UsbDevContext[SlotId].InputContext;
+  OutputContext = Xhc->UsbDevContext[SlotId].OutputContext;
   ZeroMem (InputContext, sizeof (INPUT_CONTEXT));
+
+  CopyMem (&InputContext->EP[0], &OutputContext->EP[0], sizeof (ENDPOINT_CONTEXT));
 
   InputContext->InputControlContext.Dword2 |= BIT1;
   InputContext->EP[0].MaxPacketSize         = MaxPacketSize;
+  InputContext->EP[0].EPState               = 0;
 
   ZeroMem (&CmdTrbEvalu, sizeof (CmdTrbEvalu));
   PhyAddr              = UsbHcGetPciAddrForHostAddr (Xhc->MemPool, InputContext, sizeof (INPUT_CONTEXT));
@@ -4034,6 +4018,7 @@ XhcEvaluateContext64 (
   CMD_TRB_EVALUATE_CONTEXT    CmdTrbEvalu;
   EVT_TRB_COMMAND_COMPLETION  *EvtTrb;
   INPUT_CONTEXT_64            *InputContext;
+  DEVICE_CONTEXT_64           *OutputContext;
   EFI_PHYSICAL_ADDRESS        PhyAddr;
 
   ASSERT (Xhc->UsbDevContext[SlotId].SlotId != 0);
@@ -4041,11 +4026,15 @@ XhcEvaluateContext64 (
   //
   // 4.6.7 Evaluate Context
   //
-  InputContext = Xhc->UsbDevContext[SlotId].InputContext;
+  InputContext  = Xhc->UsbDevContext[SlotId].InputContext;
+  OutputContext = Xhc->UsbDevContext[SlotId].OutputContext;
   ZeroMem (InputContext, sizeof (INPUT_CONTEXT_64));
+
+  CopyMem (&InputContext->EP[0], &OutputContext->EP[0], sizeof (ENDPOINT_CONTEXT_64));
 
   InputContext->InputControlContext.Dword2 |= BIT1;
   InputContext->EP[0].MaxPacketSize         = MaxPacketSize;
+  InputContext->EP[0].EPState               = 0;
 
   ZeroMem (&CmdTrbEvalu, sizeof (CmdTrbEvalu));
   PhyAddr              = UsbHcGetPciAddrForHostAddr (Xhc->MemPool, InputContext, sizeof (INPUT_CONTEXT_64));

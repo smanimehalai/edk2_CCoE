@@ -19,7 +19,7 @@
 #include <PiPei.h>
 #include <Register/Amd/Msr.h>
 #include <Register/Intel/SmramSaveStateMap.h>
-#include <Library/VmgExitLib.h>
+#include <Library/CcExitLib.h>
 #include <ConfidentialComputingGuestAttr.h>
 
 #include "Platform.h"
@@ -50,7 +50,7 @@ AmdSevSnpInitialize (
   }
 
   //
-  // Query the hypervisor feature using the VmgExit and set the value in the
+  // Query the hypervisor feature using the CcExitVmgExit and set the value in the
   // hypervisor features PCD.
   //
   HvFeatures = GetHypervisorFeature ();
@@ -129,19 +129,19 @@ GetHypervisorFeature (
   //
   // Initialize the GHCB
   //
-  VmgInit (Ghcb, &InterruptState);
+  CcExitVmgInit (Ghcb, &InterruptState);
 
   //
   // Query the Hypervisor Features.
   //
-  Status = VmgExit (Ghcb, SVM_EXIT_HYPERVISOR_FEATURES, 0, 0);
+  Status = CcExitVmgExit (Ghcb, SVM_EXIT_HYPERVISOR_FEATURES, 0, 0);
   if ((Status != 0)) {
     SevEsProtocolFailure (GHCB_TERMINATE_GHCB_GENERAL);
   }
 
   Features = Ghcb->SaveArea.SwExitInfo2;
 
-  VmgDone (Ghcb, InterruptState);
+  CcExitVmgDone (Ghcb, InterruptState);
 
   return Features;
 }
@@ -228,7 +228,7 @@ AmdSevEsInitialize (
   //   Since the pages must survive across the UEFI to OS transition
   //   make them reserved.
   //
-  GhcbPageCount = mMaxCpuCount * 2;
+  GhcbPageCount = mPlatformInfoHob.PcdCpuMaxLogicalProcessorNumber * 2;
   GhcbBase      = AllocateReservedPages (GhcbPageCount);
   ASSERT (GhcbBase != NULL);
 
@@ -266,7 +266,7 @@ AmdSevEsInitialize (
   // Allocate #VC recursion backup pages. The number of backup pages needed is
   // one less than the maximum VC count.
   //
-  GhcbBackupPageCount = mMaxCpuCount * (VMGEXIT_MAXIMUM_VC_COUNT - 1);
+  GhcbBackupPageCount = mPlatformInfoHob.PcdCpuMaxLogicalProcessorNumber * (VMGEXIT_MAXIMUM_VC_COUNT - 1);
   GhcbBackupBase      = AllocatePages (GhcbBackupPageCount);
   ASSERT (GhcbBackupBase != NULL);
 
@@ -367,7 +367,7 @@ AmdSevInitialize (
   // until after re-encryption, in order to prevent an information leak to the
   // hypervisor.
   //
-  if (FeaturePcdGet (PcdSmmSmramRequire) && (mBootMode != BOOT_ON_S3_RESUME)) {
+  if (mPlatformInfoHob.SmmSmramRequire && (mPlatformInfoHob.BootMode != BOOT_ON_S3_RESUME)) {
     RETURN_STATUS  LocateMapStatus;
     UINTN          MapPagesBase;
     UINTN          MapPagesCount;
@@ -378,7 +378,7 @@ AmdSevInitialize (
                         );
     ASSERT_RETURN_ERROR (LocateMapStatus);
 
-    if (mQ35SmramAtDefaultSmbase) {
+    if (mPlatformInfoHob.Q35SmramAtDefaultSmbase) {
       //
       // The initial SMRAM Save State Map has been covered as part of a larger
       // reserved memory allocation in InitializeRamRegions().
