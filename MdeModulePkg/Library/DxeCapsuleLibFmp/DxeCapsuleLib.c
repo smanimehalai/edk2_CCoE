@@ -41,6 +41,11 @@
 #include <Protocol/FirmwareManagementProgress.h>
 #include <Protocol/DevicePath.h>
 
+//><ADLINK-MS20242902>//
+EFI_GUID mOldGuid =  { 0xf08bca31, 0x542e, 0x4cea, { 0x8b, 0x48, 0x8e, 0x54, 0xf9, 0x42, 0x25, 0x94 } };
+EFI_GUID mNewGuid =  { 0xcdcdd0b7, 0x8afb, 0x4883, { 0x85, 0x3a, 0xae, 0x93, 0x98, 0x07, 0x7a, 0x0e } };
+//><ADLINK-MS20242902>//
+
 EFI_SYSTEM_RESOURCE_TABLE  *mEsrtTable             = NULL;
 BOOLEAN                    mIsVirtualAddrConverted = FALSE;
 
@@ -792,7 +797,9 @@ GetFmpHandleBufferByType (
       //
       // Check if this FMP instance matches
       //
-      if (CompareGuid (UpdateImageTypeId, &TempFmpImageInfo->ImageTypeId)) {
+	  //><ADLINK-MS20242902>//
+      if ((CompareGuid (UpdateImageTypeId, &TempFmpImageInfo->ImageTypeId))||(CompareGuid (UpdateImageTypeId, &mOldGuid))||(CompareGuid (UpdateImageTypeId, &mNewGuid))) {
+      //><ADLINK-MS20242902>//
         if ((UpdateHardwareInstance == 0) ||
             ((FmpImageInfoDescriptorVer >= EFI_FIRMWARE_IMAGE_DESCRIPTOR_VERSION) &&
              (UpdateHardwareInstance == TempFmpImageInfo->HardwareInstance)))
