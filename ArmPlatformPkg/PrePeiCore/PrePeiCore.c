@@ -104,7 +104,7 @@ CEntryPoint (
   // as Non-secure interface is already enabled in Secure world.
   //
   //><ADLINK-MS20240103>//
-   SerialPortInitialize ();
+   //SerialPortInitialize ();
   //><ADLINK-MS20240103>//
   // Write VBAR - The Exception Vector table must be aligned to its requirement
   // Note: The AArch64 Vector table must be 2k-byte aligned - if this assertion fails ensure
