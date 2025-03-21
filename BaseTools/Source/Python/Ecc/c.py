@@ -43,7 +43,7 @@ def GetArrayPattern():
     return p
 
 def GetTypedefFuncPointerPattern():
-    p = re.compile('[_\w\s]*\([\w\s]*\*+\s*[_\w]+\s*\)\s*\(.*\)', re.DOTALL)
+    p = re.compile(r'[_\w\s]*\([\w\s]*\*+\s*[_\w]+\s*\)\s*\(.*\)', re.DOTALL)
     return p
 
 def GetDB():
@@ -2235,7 +2235,7 @@ def CheckDoxygenCommand(FullFileName):
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_COMMENT, DataClass.MODEL_IDENTIFIER_FUNCTION_HEADER)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     DoxygenCommandList = ['bug', 'todo', 'example', 'file', 'attention', 'param', 'post', 'pre', 'retval',
-                          'return', 'sa', 'since', 'test', 'note', 'par', 'endcode', 'code']
+                          'return', 'sa', 'since', 'test', 'note', 'par', 'endcode', 'code', 'endverbatim', 'verbatim']
     for Result in ResultSet:
         CommentStr = Result[0]
         CommentPartList = CommentStr.split()
@@ -2612,8 +2612,8 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
 
 
             if Tag.find(ParamName) == -1 and ParamName != 'VOID' and ParamName != 'void':
-                ErrorMsgList.append('Line %d : in Comment, <%s> does NOT consistent with parameter name %s ' % (CommentStartLine, (TagPartList[0] + ' ' + TagPartList[1]).replace('\n', '').replace('\r', ''), ParamName))
-                PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'in Comment, <%s> does NOT consistent with parameter name %s ' % ((TagPartList[0] + ' ' + TagPartList[1]).replace('\n', '').replace('\r', ''), ParamName), TableName, CommentId)
+                ErrorMsgList.append('Line %d : in Comment, <%s> is NOT consistent with parameter name %s ' % (CommentStartLine, (TagPartList[0] + ' ' + TagPartList[1]).replace('\n', '').replace('\r', ''), ParamName))
+                PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'in Comment, <%s> is NOT consistent with parameter name %s ' % ((TagPartList[0] + ' ' + TagPartList[1]).replace('\n', '').replace('\r', ''), ParamName), TableName, CommentId)
             Index += 1
 
         if Index < ParamNumber:

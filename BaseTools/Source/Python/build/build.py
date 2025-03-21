@@ -4,7 +4,7 @@
 #  Copyright (c) 2014, Hewlett-Packard Development Company, L.P.<BR>
 #  Copyright (c) 2007 - 2021, Intel Corporation. All rights reserved.<BR>
 #  Copyright (c) 2018, Hewlett Packard Enterprise Development, L.P.<BR>
-#  Copyright (c) 2020, ARM Limited. All rights reserved.<BR>
+#  Copyright (c) 2020 - 2021, ARM Limited. All rights reserved.<BR>
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -28,6 +28,8 @@ import threading
 from linecache import getlines
 from subprocess import Popen,PIPE, STDOUT
 from collections import OrderedDict, defaultdict
+import json
+import secrets
 
 from AutoGen.PlatformAutoGen import PlatformAutoGen
 from AutoGen.ModuleAutoGen import ModuleAutoGen
@@ -67,10 +69,6 @@ from AutoGen.AutoGen import CalculatePriorityValue
 ## standard targets of build command
 gSupportedTarget = ['all', 'genc', 'genmake', 'modules', 'libraries', 'fds', 'clean', 'cleanall', 'cleanlib', 'run']
 
-## build configuration file
-gBuildConfiguration = "target.txt"
-gToolsDefinition = "tools_def.txt"
-
 TemporaryTablePattern = re.compile(r'^_\d+_\d+_[a-fA-F0-9]+$')
 TmpTableDict = {}
 
@@ -107,7 +105,7 @@ def CheckEnvVariable():
         EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found",
                         ExtraData="WORKSPACE")
 
-    WorkspaceDir = os.path.normcase(os.path.normpath(os.environ["WORKSPACE"]))
+    WorkspaceDir = os.path.normpath(os.environ["WORKSPACE"])
     if not os.path.exists(WorkspaceDir):
         EdkLogger.error("build", FILE_NOT_FOUND, "WORKSPACE doesn't exist", ExtraData=WorkspaceDir)
     elif ' ' in WorkspaceDir:
@@ -126,7 +124,7 @@ def CheckEnvVariable():
                 EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in PACKAGES_PATH", ExtraData=Path)
 
 
-    os.environ["EDK_TOOLS_PATH"] = os.path.normcase(os.environ["EDK_TOOLS_PATH"])
+    os.environ["EDK_TOOLS_PATH"] = os.path.normpath(os.environ["EDK_TOOLS_PATH"])
 
     # check EDK_TOOLS_PATH
     if "EDK_TOOLS_PATH" not in os.environ:
@@ -197,7 +195,7 @@ def ReadMessage(From, To, ExitFlag,MemTo=None):
                 To(LineStr)
         else:
             break
-        if ExitFlag.isSet():
+        if ExitFlag.is_set():
             break
 
 class MakeSubProc(Popen):
@@ -209,7 +207,7 @@ class MakeSubProc(Popen):
 #
 # This method will call subprocess.Popen to execute an external program with
 # given options in specified directory. Because of the dead-lock issue during
-# redirecting output of the external program, threads are used to to do the
+# redirecting output of the external program, threads are used to do the
 # redirection work.
 #
 # @param  Command               A list or string containing the call of the program
@@ -241,8 +239,8 @@ def LaunchCommand(Command, WorkingDir,ModuleAuto = None):
         EndOfProcedure.clear()
         if Proc.stdout:
             StdOutThread = Thread(target=ReadMessage, args=(Proc.stdout, EdkLogger.info, EndOfProcedure,Proc.ProcOut))
-            StdOutThread.setName("STDOUT-Redirector")
-            StdOutThread.setDaemon(False)
+            StdOutThread.name = "STDOUT-Redirector"
+            StdOutThread.daemon = False
             StdOutThread.start()
 
 
@@ -285,6 +283,22 @@ def LaunchCommand(Command, WorkingDir,ModuleAuto = None):
         iau.CreateDepsInclude()
         iau.CreateDepsTarget()
     return "%dms" % (int(round((time.time() - BeginTime) * 1000)))
+
+def GenerateStackCookieValues():
+    if GlobalData.gBuildDirectory == "":
+        return
+
+    # Check if the 32 bit values array needs to be created
+    if not os.path.exists(os.path.join(GlobalData.gBuildDirectory, "StackCookieValues32.json")):
+        StackCookieValues32 = [secrets.randbelow(0xFFFFFFFF) for _ in range(0, 100)]
+        with open (os.path.join(GlobalData.gBuildDirectory, "StackCookieValues32.json"), "w") as file:
+            json.dump(StackCookieValues32, file)
+
+    # Check if the 64 bit values array needs to be created
+    if not os.path.exists(os.path.join(GlobalData.gBuildDirectory, "StackCookieValues64.json")):
+        StackCookieValues64 = [secrets.randbelow(0xFFFFFFFFFFFFFFFF) for _ in range(0, 100)]
+        with open (os.path.join(GlobalData.gBuildDirectory, "StackCookieValues64.json"), "w") as file:
+            json.dump(StackCookieValues64, file)
 
 ## The smallest unit that can be built in multi-thread build mode
 #
@@ -433,8 +447,8 @@ class BuildTask:
     @staticmethod
     def StartScheduler(MaxThreadNumber, ExitFlag):
         SchedulerThread = Thread(target=BuildTask.Scheduler, args=(MaxThreadNumber, ExitFlag))
-        SchedulerThread.setName("Build-Task-Scheduler")
-        SchedulerThread.setDaemon(False)
+        SchedulerThread.name = "Build-Task-Scheduler"
+        SchedulerThread.daemon = False
         SchedulerThread.start()
         # wait for the scheduler to be started, especially useful in Linux
         while not BuildTask.IsOnGoing():
@@ -456,7 +470,7 @@ class BuildTask:
             # indicated to do so, or there's error in running thread
             #
             while (len(BuildTask._PendingQueue) > 0 or len(BuildTask._ReadyQueue) > 0 \
-                   or not ExitFlag.isSet()) and not BuildTask._ErrorFlag.isSet():
+                   or not ExitFlag.is_set()) and not BuildTask._ErrorFlag.is_set():
                 EdkLogger.debug(EdkLogger.DEBUG_8, "Pending Queue (%d), Ready Queue (%d)"
                                 % (len(BuildTask._PendingQueue), len(BuildTask._ReadyQueue)))
 
@@ -474,7 +488,7 @@ class BuildTask:
                 BuildTask._PendingQueueLock.release()
 
                 # launch build thread until the maximum number of threads is reached
-                while not BuildTask._ErrorFlag.isSet():
+                while not BuildTask._ErrorFlag.is_set():
                     # empty ready queue, do nothing further
                     if len(BuildTask._ReadyQueue) == 0:
                         break
@@ -498,12 +512,12 @@ class BuildTask:
                 time.sleep(0.01)
 
             # wait for all running threads exit
-            if BuildTask._ErrorFlag.isSet():
+            if BuildTask._ErrorFlag.is_set():
                 EdkLogger.quiet("\nWaiting for all build threads exit...")
-            # while not BuildTask._ErrorFlag.isSet() and \
+            # while not BuildTask._ErrorFlag.is_set() and \
             while len(BuildTask._RunningQueue) > 0:
                 EdkLogger.verbose("Waiting for thread ending...(%d)" % len(BuildTask._RunningQueue))
-                EdkLogger.debug(EdkLogger.DEBUG_8, "Threads [%s]" % ", ".join(Th.getName() for Th in threading.enumerate()))
+                EdkLogger.debug(EdkLogger.DEBUG_8, "Threads [%s]" % ", ".join(Th.name for Th in threading.enumerate()))
                 # avoid tense loop
                 time.sleep(0.1)
         except BaseException as X:
@@ -531,7 +545,7 @@ class BuildTask:
     #
     @staticmethod
     def IsOnGoing():
-        return not BuildTask._SchedulerStopped.isSet()
+        return not BuildTask._SchedulerStopped.is_set()
 
     ## Abort the build
     @staticmethod
@@ -547,7 +561,7 @@ class BuildTask:
     #
     @staticmethod
     def HasError():
-        return BuildTask._ErrorFlag.isSet()
+        return BuildTask._ErrorFlag.is_set()
 
     ## Get error message in running thread
     #
@@ -644,7 +658,7 @@ class BuildTask:
             # TRICK: hide the output of threads left running, so that the user can
             #        catch the error message easily
             #
-            if not BuildTask._ErrorFlag.isSet():
+            if not BuildTask._ErrorFlag.is_set():
                 GlobalData.gBuildingModule = "%s [%s, %s, %s]" % (str(self.BuildItem.BuildObject),
                                                                   self.BuildItem.BuildObject.Arch,
                                                                   self.BuildItem.BuildObject.ToolChain,
@@ -653,7 +667,7 @@ class BuildTask:
             EdkLogger.SetLevel(EdkLogger.ERROR)
             BuildTask._ErrorFlag.set()
             BuildTask._ErrorMessage = "%s broken\n    %s [%s]" % \
-                                      (threading.currentThread().getName(), Command, WorkingDir)
+                                      (threading.current_thread().name, Command, WorkingDir)
 
         # indicate there's a thread is available for another build task
         BuildTask._RunningQueueLock.acquire()
@@ -667,8 +681,8 @@ class BuildTask:
         EdkLogger.quiet("Building ... %s" % repr(self.BuildItem))
         Command = self.BuildItem.BuildCommand + [self.BuildItem.Target]
         self.BuildTread = Thread(target=self._CommandThread, args=(Command, self.BuildItem.WorkingDir))
-        self.BuildTread.setName("build thread")
-        self.BuildTread.setDaemon(False)
+        self.BuildTread.name = "build thread"
+        self.BuildTread.daemon = False
         self.BuildTread.start()
 
 ## The class contains the information related to EFI image
@@ -803,11 +817,11 @@ class Build():
         EdkLogger.quiet("%-16s = %s" % ("WORKSPACE", os.environ["WORKSPACE"]))
         if "PACKAGES_PATH" in os.environ:
             # WORKSPACE env has been converted before. Print the same path style with WORKSPACE env.
-            EdkLogger.quiet("%-16s = %s" % ("PACKAGES_PATH", os.path.normcase(os.path.normpath(os.environ["PACKAGES_PATH"]))))
+            EdkLogger.quiet("%-16s = %s" % ("PACKAGES_PATH", os.path.normpath(os.environ["PACKAGES_PATH"])))
         EdkLogger.quiet("%-16s = %s" % ("EDK_TOOLS_PATH", os.environ["EDK_TOOLS_PATH"]))
         if "EDK_TOOLS_BIN" in os.environ:
             # Print the same path style with WORKSPACE env.
-            EdkLogger.quiet("%-16s = %s" % ("EDK_TOOLS_BIN", os.path.normcase(os.path.normpath(os.environ["EDK_TOOLS_BIN"]))))
+            EdkLogger.quiet("%-16s = %s" % ("EDK_TOOLS_BIN", os.path.normpath(os.environ["EDK_TOOLS_BIN"])))
         EdkLogger.quiet("%-16s = %s" % ("CONF_PATH", GlobalData.gConfDirectory))
         if "PYTHON3_ENABLE" in os.environ:
             PYTHON3_ENABLE = os.environ["PYTHON3_ENABLE"]
@@ -1177,14 +1191,14 @@ class Build():
             EndOfProcedure.clear()
             if Process.stdout:
                 StdOutThread = Thread(target=ReadMessage, args=(Process.stdout, EdkLogger.info, EndOfProcedure))
-                StdOutThread.setName("STDOUT-Redirector")
-                StdOutThread.setDaemon(False)
+                StdOutThread.name = "STDOUT-Redirector"
+                StdOutThread.daemon = False
                 StdOutThread.start()
 
             if Process.stderr:
                 StdErrThread = Thread(target=ReadMessage, args=(Process.stderr, EdkLogger.quiet, EndOfProcedure))
-                StdErrThread.setName("STDERR-Redirector")
-                StdErrThread.setDaemon(False)
+                StdErrThread.name = "STDERR-Redirector"
+                StdErrThread.daemon = False
                 StdErrThread.start()
             # waiting for program exit
             Process.wait()
@@ -1217,14 +1231,14 @@ class Build():
             EndOfProcedure.clear()
             if Process.stdout:
                 StdOutThread = Thread(target=ReadMessage, args=(Process.stdout, EdkLogger.info, EndOfProcedure))
-                StdOutThread.setName("STDOUT-Redirector")
-                StdOutThread.setDaemon(False)
+                StdOutThread.name = "STDOUT-Redirector"
+                StdOutThread.daemon = False
                 StdOutThread.start()
 
             if Process.stderr:
                 StdErrThread = Thread(target=ReadMessage, args=(Process.stderr, EdkLogger.quiet, EndOfProcedure))
-                StdErrThread.setName("STDERR-Redirector")
-                StdErrThread.setDaemon(False)
+                StdErrThread.name = "STDERR-Redirector"
+                StdErrThread.daemon = False
                 StdErrThread.start()
             # waiting for program exit
             Process.wait()
@@ -1267,7 +1281,7 @@ class Build():
             mqueue.put((None,None,None,None,None,None,None))
             AutoGenObject.DataPipe.DataContainer = {"CommandTarget": self.Target}
             AutoGenObject.DataPipe.DataContainer = {"Workspace_timestamp": AutoGenObject.Workspace._SrcTimeStamp}
-            AutoGenObject.CreateLibModuelDirs()
+            AutoGenObject.CreateLibModuleDirs()
             AutoGenObject.DataPipe.DataContainer = {"LibraryBuildDirectoryList":AutoGenObject.LibraryBuildDirectoryList}
             AutoGenObject.DataPipe.DataContainer = {"ModuleBuildDirectoryList":AutoGenObject.ModuleBuildDirectoryList}
             AutoGenObject.DataPipe.DataContainer = {"FdsCommandDict": AutoGenObject.Workspace.GenFdsCommandDict}
@@ -1307,6 +1321,9 @@ class Build():
         # run
         if Target == 'run':
             return True
+
+        # Fetch the MakeFileName.
+        self.MakeFileName = AutoGenObject.MakeFileName
 
         # build modules
         if BuildModule:
@@ -1795,6 +1812,7 @@ class Build():
                         self.UniFlag,
                         self.Progress
                         )
+                GenerateStackCookieValues()
                 self.Fdf = Wa.FdfFile
                 self.LoadFixAddress = Wa.Platform.LoadFixAddress
                 self.BuildReport.AddPlatformReport(Wa)
@@ -1898,6 +1916,7 @@ class Build():
                         self.Progress,
                         self.ModuleFile
                         )
+                GenerateStackCookieValues()
                 self.Fdf = Wa.FdfFile
                 self.LoadFixAddress = Wa.Platform.LoadFixAddress
                 Wa.CreateMakeFile(False)
@@ -2148,6 +2167,7 @@ class Build():
                 self.UniFlag,
                 self.Progress
                 )
+        GenerateStackCookieValues()
         self.Fdf = Wa.FdfFile
         self.LoadFixAddress = Wa.Platform.LoadFixAddress
         self.BuildReport.AddPlatformReport(Wa)
@@ -2180,11 +2200,9 @@ class Build():
             Pa.DataPipe.DataContainer = {"FfsCommand":CmdListDict}
             Pa.DataPipe.DataContainer = {"Workspace_timestamp": Wa._SrcTimeStamp}
             Pa.DataPipe.DataContainer = {"CommandTarget": self.Target}
-            Pa.CreateLibModuelDirs()
+            Pa.CreateLibModuleDirs()
             # Fetch the MakeFileName.
             self.MakeFileName = Pa.MakeFileName
-            if not self.MakeFileName:
-                self.MakeFileName = Pa.MakeFile
 
             Pa.DataPipe.DataContainer = {"LibraryBuildDirectoryList":Pa.LibraryBuildDirectoryList}
             Pa.DataPipe.DataContainer = {"ModuleBuildDirectoryList":Pa.ModuleBuildDirectoryList}
@@ -2667,7 +2685,7 @@ def Main():
 
         if Option.ModuleFile:
             if os.path.isabs (Option.ModuleFile):
-                if os.path.normcase (os.path.normpath(Option.ModuleFile)).find (Workspace) == 0:
+                if os.path.normcase (os.path.normpath(Option.ModuleFile)).find (os.path.normcase(Workspace)) == 0:
                     Option.ModuleFile = NormFile(os.path.normpath(Option.ModuleFile), Workspace)
             Option.ModuleFile = PathClass(Option.ModuleFile, Workspace)
             ErrorCode, ErrorInfo = Option.ModuleFile.Validate(".inf", False)
@@ -2676,13 +2694,13 @@ def Main():
 
         if Option.PlatformFile is not None:
             if os.path.isabs (Option.PlatformFile):
-                if os.path.normcase (os.path.normpath(Option.PlatformFile)).find (Workspace) == 0:
+                if os.path.normcase (os.path.normpath(Option.PlatformFile)).find (os.path.normcase(Workspace)) == 0:
                     Option.PlatformFile = NormFile(os.path.normpath(Option.PlatformFile), Workspace)
             Option.PlatformFile = PathClass(Option.PlatformFile, Workspace)
 
         if Option.FdfFile is not None:
             if os.path.isabs (Option.FdfFile):
-                if os.path.normcase (os.path.normpath(Option.FdfFile)).find (Workspace) == 0:
+                if os.path.normcase (os.path.normpath(Option.FdfFile)).find (os.path.normcase(Workspace)) == 0:
                     Option.FdfFile = NormFile(os.path.normpath(Option.FdfFile), Workspace)
             Option.FdfFile = PathClass(Option.FdfFile, Workspace)
             ErrorCode, ErrorInfo = Option.FdfFile.Validate(".fdf", False)

@@ -6,6 +6,9 @@
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 {
+    "PrEval": {
+        "DscPath": "ShellPkg.dsc",
+    },
     "LicenseCheck": {
         "IgnoreFiles": []
     },
@@ -15,6 +18,7 @@
         ##     "<ErrorID>", "<KeyWord>"
         ## ]
         "ExceptionList": [
+            "8001", "ShellCommandLineParse"
         ],
         ## Both file path and directory path are accepted.
         "IgnoreFiles": [

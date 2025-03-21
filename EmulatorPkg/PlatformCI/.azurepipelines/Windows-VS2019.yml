@@ -3,7 +3,7 @@
 #
 # Platform: EMULATORPKG
 # OS: Windows
-# Toolchain: VS2019
+# Toolchain: VS2022
 #
 # Copyright (c) Microsoft Corporation.
 # Copyright (c) 2020, Intel Corporation. All rights reserved.
@@ -16,11 +16,14 @@ pr:
   - master
   - stable/*
 
+variables:
+  - template: ../../../.azurepipelines/templates/defaults.yml
+
 jobs:
   - job: Platform_CI
     variables:
       package: 'EmulatorPkg'
-      vm_image: 'windows-latest'
+      vm_image: 'windows-2022'
       should_run: true
       run_flags: "MAKE_STARTUP_NSH=TRUE"
 
@@ -121,10 +124,11 @@ jobs:
     steps:
     - template: ../../../.azurepipelines/templates/platform-build-run-steps.yml
       parameters:
-        tool_chain_tag: VS2019
+        tool_chain_tag: VS2022
         build_pkg: $(package)
         build_target: $(Build.Target)
         build_arch: $(Build.Arch)
         build_file: $(Build.File)
         build_flags: $(Build.Flags)
         run_flags: $(Run.Flags)
+        usePythonVersion: ${{ variables.default_python_version }}
