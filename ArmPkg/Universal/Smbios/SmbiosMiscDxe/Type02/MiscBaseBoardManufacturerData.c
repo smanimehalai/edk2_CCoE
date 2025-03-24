@@ -32,7 +32,7 @@ SMBIOS_MISC_TABLE_DATA (SMBIOS_TABLE_TYPE2, MiscBaseBoardManufacturer) = {
     1,                                                    // Motherboard           :1
     0,                                                    // RequiresDaughterCard  :1
     0,                                                    // Removable             :1
-    1,                                                    // Replaceable           :1
+    0,                                                    // Replaceable           :1
     0,                                                    // HotSwappable          :1
     0                                                     // Reserved              :3
   },

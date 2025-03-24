@@ -83,7 +83,7 @@ SMBIOS_TABLE_TYPE4  mSmbiosProcessorTableTemplate = {
   0,                          // MaxSpeed
   0,                          // CurrentSpeed
   0,                          // Status
-  ProcessorUpgradeUnknown,    // ProcessorUpgrade
+  ProcessorUpgradeOther,      // ProcessorUpgrade
   0xFFFF,                     // L1CacheHandle
   0xFFFF,                     // L2CacheHandle
   0xFFFF,                     // L3CacheHandle
@@ -543,8 +543,8 @@ AllocateType4AndSetProcessorInformationStrings (
   ProcessorStrLen = UnicodeSPrint (
                       ProcessorStr,
                       StringBufferSize,
-                      L"CPU%02d",
-                      ProcessorIndex + 1
+                      L"CPU %d",
+                      ProcessorIndex
                       );
 
   // Processor Manufacture
@@ -668,6 +668,7 @@ AddSmbiosProcessorTypeTable (
   MiscProcessorData.CoresEnabled = 0;
   MiscProcessorData.ThreadCount  = 0;
   MiscProcessorData.MaxSpeed     = 0;
+  ProcessorStatus.Data           = 0;
   L1CacheHandle                  = 0xFFFF;
   L2CacheHandle                  = 0xFFFF;
   L3CacheHandle                  = 0xFFFF;

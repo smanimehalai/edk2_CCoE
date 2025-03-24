@@ -40,7 +40,7 @@ SMBIOS_MISC_TABLE_DATA (SMBIOS_TABLE_TYPE3, MiscChassisManufacturer) = {
   2,                                                      // Height
   1,                                                      // NumberofPowerCords
   0,                                                      // ContainedElementCount
-  0,                                                      // ContainedElementRecordLength
+  3,                                                      // ContainedElementRecordLength
   {                                                       // ContainedElements[0]
     {
       0,                                                    // ContainedElementType

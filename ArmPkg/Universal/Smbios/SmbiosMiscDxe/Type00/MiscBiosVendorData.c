@@ -39,10 +39,10 @@ SMBIOS_MISC_TABLE_DATA (SMBIOS_TABLE_TYPE0, MiscBiosVendor) = {
     1,                                       // PlugAndPlayIsSupported            :1
     0,                                       // ApmIsSupported                    :1
     1,                                       // BiosIsUpgradable                  :1
-    1,                                       // BiosShadowingAllowed              :1
+    0,                                       // BiosShadowingAllowed              :1
     0,                                       // VlVesaIsSupported                 :1
     0,                                       // EscdSupportIsAvailable            :1
-    1,                                       // BootFromCdIsSupported             :1
+    0,                                       // BootFromCdIsSupported             :1
     1,                                       // SelectableBootIsSupported         :1
     0,                                       // RomBiosIsSocketed                 :1
     0,                                       // BootFromPcmciaIsSupported         :1
@@ -74,11 +74,11 @@ SMBIOS_MISC_TABLE_DATA (SMBIOS_TABLE_TYPE0, MiscBiosVendor) = {
     //    0,                                         // Boot1394IsSupported               :1
     //    0                                          // SmartBatteryIsSupported           :1
     //  },
-    0x0C                                         // BIOSCharacteristicsExtensionBytes[1]
+    0x0B                                         // BIOSCharacteristicsExtensionBytes[1]
     //  {                                          //SystemReserved
-    //    0,                                         //BiosBootSpecIsSupported            :1
-    //    0,                                         //FunctionKeyNetworkBootIsSupported  :1
-    //    1,                                         //TargetContentDistributionEnabled   :1
+    //    1,                                         //BiosBootSpecIsSupported            :1
+    //    1,                                         //FunctionKeyNetworkBootIsSupported  :1
+    //    0,                                         //TargetContentDistributionEnabled   :1
     //    1,                                         //UefiSpecificationSupported         :1
     //    0,                                         //VirtualMachineSupported            :1
     //    0                                          //ExtensionByte2Reserved             :3
