@@ -1578,6 +1578,10 @@
   # @Prompt The value of Retry Count,  Default value is 5.
   gEfiMdeModulePkgTokenSpaceGuid.PcdAhciCommandRetryCount|5|UINT32|0x00000032
 
+[PcdsDynamicEx]
+  ##This PCD defines the base address of Console port selection
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSelectedSerialBase|0x100002600000|UINT64|0x00020008
+
 [PcdsPatchableInModule, PcdsDynamic, PcdsDynamicEx]
   ## This PCD defines the Console output row. The default value is 25 according to UEFI spec.
   #  This PCD could be set to 0 then console output would be at max column and max row.

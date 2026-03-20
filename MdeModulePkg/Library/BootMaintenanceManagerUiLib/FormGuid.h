@@ -199,6 +199,7 @@ typedef struct {
   BOOLEAN    DriverOptionChanged;
   UINT8      Active;
   UINT8      ForceReconnect;
+  UINT8      ConsoleRedirectionPort;
 } BMM_FAKE_NV_DATA;
 
 #endif

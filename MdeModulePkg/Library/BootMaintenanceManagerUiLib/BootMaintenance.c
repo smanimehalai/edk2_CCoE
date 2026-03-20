@@ -1054,6 +1054,19 @@ BootMaintRouteConfig (
     BOpt_GetDriverOptions (Private);
   }
 
+  Status = gRT->SetVariable(
+            L"BmmData",
+            &mBootMaintGuid,
+            EFI_VARIABLE_NON_VOLATILE |
+            EFI_VARIABLE_BOOTSERVICE_ACCESS |
+            EFI_VARIABLE_RUNTIME_ACCESS,
+            sizeof (BMM_FAKE_NV_DATA),
+            NewBmmData
+            );
+   if (EFI_ERROR (Status)) {
+      goto Exit;
+    }
+
   //
   // After user do the save action, need to update OldBmmData.
   //
@@ -1503,8 +1516,29 @@ InitializeBmmConfig (
   BM_MENU_ENTRY    *NewMenuEntry;
   BM_LOAD_CONTEXT  *NewLoadContext;
   UINT16           Index;
-
+  UINT8            SavedPort;
+  UINTN            Size;
+  EFI_STATUS       Status;
   ASSERT (CallbackData != NULL);
+
+//
+// Read existing value from NVRAM
+//
+Size = sizeof(BMM_FAKE_NV_DATA);
+Status = gRT->GetVariable(
+            L"BmmData",
+            &mBootMaintGuid,
+            NULL,
+            &Size,
+            &CallbackData->BmmFakeNvData
+            );
+if (!EFI_ERROR(Status)) {
+    SavedPort = CallbackData->BmmFakeNvData.ConsoleRedirectionPort;
+} else {
+    SavedPort = 0; // default COM0
+}
+
+//  ASSERT (CallbackData != NULL);
 
   //
   // Initialize data which located in BMM main page
@@ -1542,6 +1576,8 @@ InitializeBmmConfig (
   GetTerminalAttribute (CallbackData);
 
   CallbackData->BmmFakeNvData.ForceReconnect = TRUE;
+
+  CallbackData->BmmFakeNvData.ConsoleRedirectionPort = SavedPort;
 
   //
   // Backup Initialize BMM configuartion data to BmmOldFakeNVData
