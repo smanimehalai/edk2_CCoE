@@ -287,14 +287,8 @@ formset
   form formid = FORM_CON_COM_ID,
        title = STRING_TOKEN(STR_FORM_COM_TITLE);
 
-    oneof varid  = BmmData.ConsoleRedirectionPort,
-      prompt = STRING_TOKEN(STR_FORM_COM_PROMPT),
-      help   = STRING_TOKEN(STR_FORM_PORT_HELP),
-      flags  = INTERACTIVE | RESET_REQUIRED,
-
-      option text = STRING_TOKEN(STR_COM0), value = 0x0, flags = DEFAULT;
-      option text = STRING_TOKEN(STR_COM1), value = 0x1, flags = 0;
-    endoneof;
+       label FORM_CON_COM_ID;
+       label LABEL_END;
   endform;
 
   form formid = FORM_CON_COM_SETUP_ID,

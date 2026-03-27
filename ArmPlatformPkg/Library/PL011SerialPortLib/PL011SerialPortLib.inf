@@ -32,7 +32,6 @@
 
 [Pcd]
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterBase
-  gEfiMdeModulePkgTokenSpaceGuid.PcdSelectedSerialBase
 
 [FixedPcd]
   gEfiMdePkgTokenSpaceGuid.PcdUartDefaultBaudRate
