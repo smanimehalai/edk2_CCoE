@@ -1228,6 +1228,7 @@
   ## Base address of 16550 serial port registers in MMIO or I/O space. Default is 0x3F8.
   # @Prompt Base address of serial port registers.
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterBase|0x03F8|UINT64|0x00020002
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSolRegisterBase|0x100002630000|UINT64|0x00020009
 
   ## Baud rate for the 16550 serial port.  Default is 115200 baud.
   # @Prompt Baud rate for serial port.
@@ -1577,6 +1578,10 @@
   ## The Retry Count of AHCI command if there is a failure
   # @Prompt The value of Retry Count,  Default value is 5.
   gEfiMdeModulePkgTokenSpaceGuid.PcdAhciCommandRetryCount|5|UINT32|0x00000032
+
+[PcdsDynamicEx]
+ ##This PCD defined the Console port selection
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSelectedSerialBase|0x0|UINT8|0x00020008
 
 [PcdsPatchableInModule, PcdsDynamic, PcdsDynamicEx]
   ## This PCD defines the Console output row. The default value is 25 according to UEFI spec.

@@ -17,6 +17,20 @@
 #include <Library/PL011UartLib.h>
 #include <Library/SerialPortLib.h>
 
+UINT64
+GetSerialPortBase (
+  VOID
+)
+{
+  UINT8 Port = PcdGet8(PcdSelectedSerialBase);
+
+  if (Port == 1) {
+    return FixedPcdGet64(PcdSolRegisterBase);
+  }
+
+  return FixedPcdGet64(PcdSerialRegisterBase);
+}
+
 /** Initialise the serial device hardware with default settings.
 
   @retval RETURN_SUCCESS            The serial device was initialised.
@@ -42,7 +56,7 @@ SerialPortInitialize (
   StopBits         = (EFI_STOP_BITS_TYPE)FixedPcdGet8 (PcdUartDefaultStopBits);
 
   return PL011UartInitializePort (
-           (UINTN)PcdGet64 (PcdSerialRegisterBase),
+           GetSerialPortBase (),
            PL011UartClockGetFreq (),
            &BaudRate,
            &ReceiveFifoDepth,
@@ -69,7 +83,7 @@ SerialPortWrite (
   IN UINTN  NumberOfBytes
   )
 {
-  return PL011UartWrite ((UINTN)PcdGet64 (PcdSerialRegisterBase), Buffer, NumberOfBytes);
+  return PL011UartWrite (GetSerialPortBase (), Buffer, NumberOfBytes);
 }
 
 /**
@@ -89,7 +103,7 @@ SerialPortRead (
   IN  UINTN  NumberOfBytes
   )
 {
-  return PL011UartRead ((UINTN)PcdGet64 (PcdSerialRegisterBase), Buffer, NumberOfBytes);
+  return PL011UartRead (GetSerialPortBase (), Buffer, NumberOfBytes);
 }
 
 /**
@@ -105,7 +119,7 @@ SerialPortPoll (
   VOID
   )
 {
-  return PL011UartPoll ((UINTN)PcdGet64 (PcdSerialRegisterBase));
+  return PL011UartPoll (GetSerialPortBase ());
 }
 
 /**
@@ -151,7 +165,7 @@ SerialPortSetAttributes (
   )
 {
   return PL011UartInitializePort (
-           (UINTN)PcdGet64 (PcdSerialRegisterBase),
+           GetSerialPortBase (),
            PL011UartClockGetFreq (),
            BaudRate,
            ReceiveFifoDepth,
@@ -193,7 +207,7 @@ SerialPortSetControl (
   IN UINT32  Control
   )
 {
-  return PL011UartSetControl ((UINTN)PcdGet64 (PcdSerialRegisterBase), Control);
+  return PL011UartSetControl (GetSerialPortBase (), Control);
 }
 
 /**
@@ -234,5 +248,5 @@ SerialPortGetControl (
   OUT UINT32  *Control
   )
 {
-  return PL011UartGetControl ((UINTN)PcdGet64 (PcdSerialRegisterBase), Control);
+  return PL011UartGetControl (GetSerialPortBase (), Control);
 }
